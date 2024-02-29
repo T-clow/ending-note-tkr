@@ -22,6 +22,7 @@ group :development, :test do
   gem "debug", platforms: %i[ mri windows ]
   gem 'rubocop' 
   gem 'rubocop-airbnb'
+  gem 'rspec-rails'
 end
 
 group :development do
