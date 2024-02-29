@@ -66,15 +66,13 @@ jobs:
       - name: Run rubocop
         run: bundle exec rubocop
 
-  deploy:
-    needs: build-and-test
-    runs-on: ubuntu-latest
-    steps:
+deploy:
+  needs: [rspec, rubocop]
+  runs-on: ubuntu-latest
+  steps:
     - uses: actions/checkout@v2
-
     - name: Log in to Heroku Container Registry
       run: echo ${{ secrets.HEROKU_API_KEY }} | docker login --username ${{ secrets.HEROKU_EMAIL }} --password-stdin registry.heroku.com
-
     - name: Build and push Docker Image to Heroku
       run: |
         docker build -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/web .
