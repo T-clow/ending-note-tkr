@@ -1,4 +1,4 @@
-name: CI
+name: CI/CD
 
 on: [push]
 
@@ -14,11 +14,6 @@ jobs:
           MYSQL_DATABASE: test_db
         ports:
           - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
 
     steps:
     - uses: actions/checkout@v2
@@ -26,7 +21,7 @@ jobs:
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
       with:
-        ruby-version: 2.7
+        ruby-version: 3.2.2
 
     - name: Install dependencies
       run: |
@@ -39,7 +34,7 @@ jobs:
         sudo service mysql start
         mysql -e 'CREATE DATABASE IF NOT EXISTS test_db;' -u root --password=password
 
-    - name: Run tests
+    - name: Run RSpec
       env:
         MYSQL_HOST: mysql
         MYSQL_USERNAME: root
