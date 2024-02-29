@@ -65,3 +65,27 @@ jobs:
 
       - name: Run rubocop
         run: bundle exec rubocop
+
+  deploy:
+    needs: [rspec, rubocop]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Heroku CLI
+        run: |
+          curl https://cli-assets.heroku.com/install.sh | sh
+
+      - name: Heroku login
+        run: heroku login --token ${{ secrets.HEROKU_API_TOKEN }}
+
+      - name: Container login
+        run: heroku container:login
+
+      - name: Build and push Docker image
+        run: |
+          heroku container:push web --app ${{ secrets.HEROKU_APP_NAME }}
+
+      - name: Release to Heroku
+        run: |
+          heroku container:release web --app ${{ secrets.HEROKU_APP_NAME }}
