@@ -1,9 +1,9 @@
-name: CI/CD
+name: CI/CD Pipeline
 
 on: [push]
 
 jobs:
-  test:
+  build-and-test:
     runs-on: ubuntu-latest
 
     services:
@@ -11,44 +11,31 @@ jobs:
         image: mysql:5.7
         env:
           MYSQL_ROOT_PASSWORD: password
-          MYSQL_DATABASE: test_db
+          MYSQL_DATABASE: rails_app_test
         ports:
           - 3306:3306
-
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -ppassword"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
     steps:
     - uses: actions/checkout@v2
 
-    - name: Set up Ruby
-      uses: ruby/setup-ruby@v1
-      with:
-        ruby-version: 3.2.2
+    - name: Build Docker Image
+      run: docker build -t ending-note-tkr .
 
-    - name: Install dependencies
+    - name: Run RSpec Tests
       run: |
-        sudo apt-get update
-        sudo apt-get install libmysqlclient-dev
-        bundle install
-
-    - name: Set up database
-      run: |
-        sudo service mysql start
-        mysql -e 'CREATE DATABASE IF NOT EXISTS test_db;' -u root --password=password
-
-    - name: Run RSpec
+        docker run --network host ending-note-tkr bundle exec rspec
       env:
-        MYSQL_HOST: mysql
-        MYSQL_USERNAME: root
-        MYSQL_PASSWORD: password
-        MYSQL_DATABASE: test_db
-      run: |
-        bundle exec rake db:migrate RAILS_ENV=test
-        bundle exec rspec
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
     - name: Run RuboCop
-      run: bundle exec rubocop
+      run: docker run ending-note-tkr bundle exec rubocop
 
   deploy:
-    needs: test
+    needs: build-and-test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
@@ -61,7 +48,6 @@ jobs:
       run: |
         docker build -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/web .
         docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/web
-
     - name: Release Docker Image to Heroku
       run: heroku container:release web -a ${{ secrets.HEROKU_APP_NAME }}
       env:
