@@ -1,9 +1,9 @@
-name: CI/CD Pipeline
+name: CI
 
 on: [push]
 
 jobs:
-  build-and-test:
+  test:
     runs-on: ubuntu-latest
 
     services:
@@ -11,32 +11,49 @@ jobs:
         image: mysql:5.7
         env:
           MYSQL_ROOT_PASSWORD: password
-          MYSQL_DATABASE: rails_app_test
+          MYSQL_DATABASE: test_db
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -h localhost -ppassword"
+          --health-cmd="mysqladmin ping"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=5
+          --health-retries=3
 
     steps:
     - uses: actions/checkout@v2
 
-    - name: Build Docker Image
-      run: docker build -t ending-note-tkr .
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: 2.7
 
-    - name: Run RSpec Tests
+    - name: Install dependencies
       run: |
-        docker run --network host ending-note-tkr bundle exec rspec
+        sudo apt-get update
+        sudo apt-get install libmysqlclient-dev
+        bundle install
+
+    - name: Set up database
+      run: |
+        sudo service mysql start
+        mysql -e 'CREATE DATABASE IF NOT EXISTS test_db;' -u root --password=password
+
+    - name: Run tests
       env:
-        DATABASE_URL: "mysql2://root:password@localhost:3306/rails_app_test"
+        MYSQL_HOST: mysql
+        MYSQL_USERNAME: root
+        MYSQL_PASSWORD: password
+        MYSQL_DATABASE: test_db
+      run: |
+        bundle exec rake db:migrate RAILS_ENV=test
+        bundle exec rspec
 
     - name: Run RuboCop
-      run: docker run ending-note-tkr bundle exec rubocop
+      run: bundle exec rubocop
 
   deploy:
-    needs: build-and-test
+    needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
