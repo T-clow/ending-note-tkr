@@ -20,6 +20,8 @@ gem "bootsnap", require: false
 
 group :development, :test do
   gem "debug", platforms: %i[ mri windows ]
+  gem 'rubocop' 
+  gem 'rubocop-airbnb'
 end
 
 group :development do
