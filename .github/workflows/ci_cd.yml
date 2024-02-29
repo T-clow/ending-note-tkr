@@ -66,29 +66,29 @@ jobs:
       - name: Run rubocop
         run: bundle exec rubocop
 
-deploy:
-  needs: [rspec, rubocop]
-  runs-on: ubuntu-latest
-  steps:
-    - uses: actions/checkout@v2
+  deploy:
+    needs: [rspec, rubocop]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
 
-    - name: Install Heroku CLI
-      run: |
-        curl https://cli-assets.heroku.com/install.sh | sh
+      - name: Install Heroku CLI
+        run: |
+          curl https://cli-assets.heroku.com/install.sh | sh
 
-    - name: Heroku Container login
-      env:
-        HEROKU_API_KEY: ${{ secrets.HEROKU_API_TOKEN }}
-      run: heroku container:login
+      - name: Heroku Container login
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_TOKEN }}
+        run: heroku container:login
 
-    - name: Build and push Docker image
-      env:
-        HEROKU_API_KEY: ${{ secrets.HEROKU_API_TOKEN }}
-      run: |
-        heroku container:push web --app ${{ secrets.HEROKU_APP_NAME }}
+      - name: Build and push Docker image
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_TOKEN }}
+        run: |
+          heroku container:push web --app ${{ secrets.HEROKU_APP_NAME }}
 
-    - name: Release to Heroku
-      env:
-        HEROKU_API_KEY: ${{ secrets.HEROKU_API_TOKEN }}
-      run: |
-        heroku container:release web --app ${{ secrets.HEROKU_APP_NAME }}
+      - name: Release to Heroku
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_TOKEN }}
+        run: |
+          heroku container:release web --app ${{ secrets.HEROKU_APP_NAME }}
